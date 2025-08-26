@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>H vs M — Jogo</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="menu" class="panel">
+    <h1>H vs M</h1>
+
+    <div class="section">
+      <h3>Configurações Iniciais</h3>
+      <label>H (Herói) — A (linha) <input id="h_a" type="number" min="1" max="10" value="10"/> B (coluna) <input id="h_b" type="number" min="1" max="10" value="1"/></label>
+      <label>M1 — A <input id="m1_a" type="number" min="1" max="10" value="1"/> B <input id="m1_b" type="number" min="1" max="10" value="1"/></label>
+      <label>M2 — A <input id="m2_a" type="number" min="1" max="10" value="1"/> B <input id="m2_b" type="number" min="1" max="10" value="10"/></label>
+      <label>T (Tesouro) — A <input id="t_a" type="number" min="1" max="10" value="5"/> B <input id="t_b" type="number" min="1" max="10" value="5"/></label>
+
+      <label>V H <input id="v_h" type="number" min="1" value="2"/></label>
+      <label>V M1 <input id="v_m1" type="number" min="1" value="1"/></label>
+      <label>V M2 <input id="v_m2" type="number" min="1" value="1"/></label>
+
+      <label>Limite de rodadas R (0 = sem limite) <input id="r_limit" type="number" min="0" value="0"/></label>
+
+      <div class="row">
+        <label><input id="toggleP" type="checkbox"/> Usar Power-Up P</label>
+        <label><input id="toggleD" type="checkbox"/> Usar Power-Up D</label>
+      </div>
+
+      <div id="powerSettings" class="subsection">
+        <h4>P (se ativo)</h4>
+        <label>P — A <input id="p_a" type="number" min="1" max="10" value="10"/> B <input id="p_b" type="number" min="1" max="10" value="5"/></label>
+        <label>Valor (V extra) <input id="p_value" type="number" min="1" value="5"/></label>
+
+        <h4>D (se ativo)</h4>
+        <label>D — A <input id="d_a" type="number" min="1" max="10" value="1"/> B <input id="d_b" type="number" min="1" max="10" value="10"/></label>
+        <label>D duração (turnos) <input id="d_duration" type="number" min="1" value="3"/></label>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button id="btnStart">Jogar</button>
+      <button id="btnRules">Regras</button>
+      <button id="btnDownload">Download ZIP</button>
+    </div>
+
+    <small class="hint">Use as setas ou WASD para mover o Herói.</small>
+  </div>
+
+  <div id="rules" class="panel hidden">
+    <h2>Regras (resumo)</h2>
+    <ol>
+      <li>H vence ao chegar no T — marcado como <strong>V</strong>.</li>
+      <li>M vence se ficar adjacente (ortogonal) ou na mesma casa que H.</li>
+      <li>Se H pega T no mesmo turno em que M fica adjacente → M vence.</li>
+      <li>Movimento ortogonal somente (sem diagonal), salvo se D ativo.</li>
+      <li>Empate de opções de M (mesma redução de Manhattan) → escolha aleatória.</li>
+      <li>R = 0 → sem limite de rodadas.</li>
+      <li>P aumenta V do personagem que pegar; D permite diagonal por X turnos.</li>
+    </ol>
+    <button id="btnBack">Voltar</button>
+  </div>
+
+  <div id="gameScreen" class="hidden">
+    <div class="hud">
+      <div id="info">Turno: <span id="turn">0</span></div>
+      <button id="btnQuit">Sair para menu</button>
+    </div>
+    <canvas id="board" width="600" height="600"></canvas>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>
