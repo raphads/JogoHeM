@@ -1,4 +1,4 @@
-// game.js - Versão corrigida H vs M
+// game.js - H vs M atualizado: H para ao alcançar T
 const qs = s => document.querySelector(s);
 const qsa = s => document.querySelectorAll(s);
 
@@ -27,55 +27,6 @@ let state = {
 function toXY(A,B){
   return { x: (B-1)*cell, y: (A-1)*cell };
 }
-
-qs('#btnRules').onclick = () => { menu.classList.add('hidden'); rules.classList.remove('hidden'); };
-qs('#btnBack').onclick = () => { rules.classList.add('hidden'); menu.classList.remove('hidden'); };
-qs('#btnQuit').onclick = () => { gameScreen.classList.add('hidden'); menu.classList.remove('hidden'); };
-
-qs('#toggleP').onchange = e => qs('#powerSettings').style.display = e.target.checked ? 'block' : 'none';
-
-qs('#btnStart').onclick = () => {
-  // read inputs
-  state.H.A = Number(qs('#h_a').value);
-  state.H.B = Number(qs('#h_b').value);
-  state.H.V = Number(qs('#v_h').value);
-
-  state.M1.A = Number(qs('#m1_a').value);
-  state.M1.B = Number(qs('#m1_b').value);
-  state.M1.V = Number(qs('#v_m1').value);
-
-  state.M2.A = Number(qs('#m2_a').value);
-  state.M2.B = Number(qs('#m2_b').value);
-  state.M2.V = Number(qs('#v_m2').value);
-
-  state.T.A = Number(qs('#t_a').value);
-  state.T.B = Number(qs('#t_b').value);
-
-  state.Rlimit = Number(qs('#r_limit').value);
-
-  // power ups
-  let useP = qs('#toggleP').checked;
-  let useD = qs('#toggleD').checked;
-  state.P.active = useP;
-  state.D.active = useD;
-  if(useP){
-    state.P.A = Number(qs('#p_a').value);
-    state.P.B = Number(qs('#p_b').value);
-    state.P.value = Number(qs('#p_value').value);
-  }
-  if(useD){
-    state.D.A = Number(qs('#d_a').value);
-    state.D.B = Number(qs('#d_b').value);
-    state.D.duration = Number(qs('#d_duration').value);
-  }
-
-  state.R = 0;
-  state.diagonalRemaining = 0;
-
-  menu.classList.add('hidden');
-  gameScreen.classList.remove('hidden');
-  draw();
-};
 
 function draw(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
@@ -127,9 +78,8 @@ function draw(){
   qs('#turn').textContent = state.R;
 }
 
-// move H de acordo com V
+// move H de acordo com V, parando ao alcançar T
 function moveHero(dA, dB){
-  // calcula passos = V
   const steps = state.H.V;
   for(let i=0;i<steps;i++){
     let nextA = state.H.A + (dA !== 0 ? Math.sign(dA) : 0);
@@ -138,14 +88,26 @@ function moveHero(dA, dB){
     // diagonal check
     if(Math.abs(dA) !== 0 && Math.abs(dB) !== 0 && state.diagonalRemaining <= 0) break;
 
-    state.H.A = Math.max(1, Math.min(10, nextA));
-    state.H.B = Math.max(1, Math.min(10, nextB));
+    // aplica limites do tabuleiro
+    nextA = Math.max(1, Math.min(10, nextA));
+    nextB = Math.max(1, Math.min(10, nextB));
+
+    // Verifica se alcança o T nesta etapa
+    if(nextA === state.T.A && nextB === state.T.B){
+      state.H.A = nextA;
+      state.H.B = nextB;
+      break; // para imediatamente
+    }
+
+    state.H.A = nextA;
+    state.H.B = nextB;
 
     // pickup P
     if(state.P.active && state.H.A === state.P.A && state.H.B === state.P.B){
       state.H.V += state.P.value;
       state.P.active = false;
     }
+
     // pickup D
     if(state.D.active && state.H.A === state.D.A && state.H.B === state.D.B){
       state.diagonalRemaining = state.D.duration;
@@ -153,7 +115,6 @@ function moveHero(dA, dB){
     }
   }
 
-  // M move
   state.R += 1;
   moveMonster(state.M1);
   moveMonster(state.M2);
@@ -167,7 +128,7 @@ function moveHero(dA, dB){
   }
 }
 
-// monster movement (igual)
+// movimento dos monstros
 function moveMonster(mon){
   for(let step=0;step<mon.V;step++){
     let dA = state.H.A - mon.A;
@@ -181,6 +142,7 @@ function moveMonster(mon){
     if(dB < 0) options.push({A: mon.A, B: mon.B-1});
     if(state.diagonalRemaining > 0 && dA !== 0 && dB !== 0){
       options.push({A: mon.A + Math.sign(dA), B: mon.B + Math.sign(dB)});
+      options.push({A: mon.A, B: mon.B + Math.sign(dB)});
     }
 
     let best = [];
@@ -205,20 +167,30 @@ function moveMonster(mon){
   }
 }
 
-// check victory
+// verifica vitória
 function checkVictory(){
+  // monstros adjacentes
   for(let m of [state.M1, state.M2]){
     const dist = Math.abs(m.A - state.H.A) + Math.abs(m.B - state.H.B);
     if(dist <= 1) return "Monstro venceu!";
   }
+
+  // H chegou em T
   if(state.H.A === state.T.A && state.H.B === state.T.B){
+    // se algum M estiver adjacente na mesma rodada
+    for(let m of [state.M1, state.M2]){
+      const dist = Math.abs(m.A - state.H.A) + Math.abs(m.B - state.H.B);
+      if(dist <= 1) return "Monstro venceu!";
+    }
     return "Herói venceu!";
   }
+
+  // empate por limite de R
   if(state.Rlimit > 0 && state.R > state.Rlimit) return "Empate (R limite)";
   return null;
 }
 
-// keyboard
+// teclado
 window.addEventListener('keydown', (ev)=>{
   if(menu.classList.contains('hidden') && gameScreen.classList.contains('hidden')) return;
   if(gameScreen.classList.contains('hidden')) return;
