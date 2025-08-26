@@ -1,4 +1,4 @@
-// game.js - Lógica do jogo H vs M (web)
+// game.js - Versão corrigida H vs M
 const qs = s => document.querySelector(s);
 const qsa = s => document.querySelectorAll(s);
 
@@ -24,18 +24,16 @@ let state = {
   diagonalRemaining: 0
 };
 
-function toXY(A,B){ // A linha (1..10) top->down, B col (1..10) left->right
+function toXY(A,B){
   return { x: (B-1)*cell, y: (A-1)*cell };
 }
 
-// UI elements
 qs('#btnRules').onclick = () => { menu.classList.add('hidden'); rules.classList.remove('hidden'); };
 qs('#btnBack').onclick = () => { rules.classList.add('hidden'); menu.classList.remove('hidden'); };
 qs('#btnQuit').onclick = () => { gameScreen.classList.add('hidden'); menu.classList.remove('hidden'); };
 
 qs('#toggleP').onchange = e => qs('#powerSettings').style.display = e.target.checked ? 'block' : 'none';
 
-// start
 qs('#btnStart').onclick = () => {
   // read inputs
   state.H.A = Number(qs('#h_a').value);
@@ -79,7 +77,6 @@ qs('#btnStart').onclick = () => {
   draw();
 };
 
-// draw board
 function draw(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
 
@@ -130,37 +127,39 @@ function draw(){
   qs('#turn').textContent = state.R;
 }
 
-// helpers: move H by delta in A/B (orthogonal unless diagonal active)
+// move H de acordo com V
 function moveHero(dA, dB){
-  // if diagonal not allowed and both non-zero, ignore
-  if(state.diagonalRemaining <= 0 && (dA !== 0 && dB !== 0)) return;
-  // H can move up to V cells — but here we apply one-step per keypress for clarity
-  let newA = Math.max(1, Math.min(10, state.H.A + dA));
-  let newB = Math.max(1, Math.min(10, state.H.B + dB));
-  state.H.A = newA; state.H.B = newB;
+  // calcula passos = V
+  const steps = state.H.V;
+  for(let i=0;i<steps;i++){
+    let nextA = state.H.A + (dA !== 0 ? Math.sign(dA) : 0);
+    let nextB = state.H.B + (dB !== 0 ? Math.sign(dB) : 0);
 
-  // pickup P/D
-  if(state.P.active && state.H.A === state.P.A && state.H.B === state.P.B){
-    state.H.V += state.P.value;
-    // disable the power-up so it can't be reused
-    state.P.active = false;
-  }
-  if(state.D.active && state.H.A === state.D.A && state.H.B === state.D.B){
-    state.diagonalRemaining = state.D.duration;
-    state.D.active = false;
+    // diagonal check
+    if(Math.abs(dA) !== 0 && Math.abs(dB) !== 0 && state.diagonalRemaining <= 0) break;
+
+    state.H.A = Math.max(1, Math.min(10, nextA));
+    state.H.B = Math.max(1, Math.min(10, nextB));
+
+    // pickup P
+    if(state.P.active && state.H.A === state.P.A && state.H.B === state.P.B){
+      state.H.V += state.P.value;
+      state.P.active = false;
+    }
+    // pickup D
+    if(state.D.active && state.H.A === state.D.A && state.H.B === state.D.B){
+      state.diagonalRemaining = state.D.duration;
+      state.D.active = false;
+    }
   }
 
-  // after H moves, increment R (we count a 'round' after H + all Ms move; to match prior behaviour we'll increment here and then move Ms)
+  // M move
   state.R += 1;
-
-  // move monsters according to their V and Manhattan reduction (no diagonal for them unless D active earlier and applied to them)
   moveMonster(state.M1);
   moveMonster(state.M2);
 
-  // decrease diagonalRemaining if active
   if(state.diagonalRemaining > 0) state.diagonalRemaining--;
 
-  // check victory
   const res = checkVictory();
   draw();
   if(res){
@@ -168,7 +167,7 @@ function moveHero(dA, dB){
   }
 }
 
-// monster movement: try reduce manhattan, if tie choose random; allow V steps
+// monster movement (igual)
 function moveMonster(mon){
   for(let step=0;step<mon.V;step++){
     let dA = state.H.A - mon.A;
@@ -176,24 +175,17 @@ function moveMonster(mon){
     const absA = Math.abs(dA), absB = Math.abs(dB);
 
     let options = [];
-    // vertical step candidate
     if(dA > 0) options.push({A: mon.A+1, B: mon.B});
     if(dA < 0) options.push({A: mon.A-1, B: mon.B});
-    // horizontal candidate
     if(dB > 0) options.push({A: mon.A, B: mon.B+1});
     if(dB < 0) options.push({A: mon.A, B: mon.B-1});
-
-    // If diagonal allowed for this monster (we do not track per-monster D usage here; only global state.diagonalRemaining),
-    // allow diagonal candidate which reduces both coords:
     if(state.diagonalRemaining > 0 && dA !== 0 && dB !== 0){
       options.push({A: mon.A + Math.sign(dA), B: mon.B + Math.sign(dB)});
     }
 
-    // Determine best candidates that minimize manhattan
     let best = [];
     let bestDist = 1e9;
     for(let opt of options){
-      // clamp to grid
       let a = Math.max(1, Math.min(10, opt.A));
       let b = Math.max(1, Math.min(10, opt.B));
       let dist = Math.abs(state.H.A - a) + Math.abs(state.H.B - b);
@@ -206,37 +198,27 @@ function moveMonster(mon){
     }
 
     if(best.length > 0){
-      // tie -> random
       const pick = best[Math.floor(Math.random()*best.length)];
       mon.A = pick.A;
       mon.B = pick.B;
-    } else {
-      // no improvement possible (same square) -> break
-      break;
-    }
+    } else break;
   }
 }
 
-// check victory/conditions: returns string or null
+// check victory
 function checkVictory(){
-  // M adjacent or same -> M wins
   for(let m of [state.M1, state.M2]){
     const dist = Math.abs(m.A - state.H.A) + Math.abs(m.B - state.H.B);
     if(dist <= 1) return "Monstro venceu!";
   }
-
-  // H picks T -> H wins unless M adjacent same turn (rule already covers M adjacency)
   if(state.H.A === state.T.A && state.H.B === state.T.B){
     return "Herói venceu!";
   }
-
-  // round limit
-  if(state.Rlimit > 0 && state.R > state.Rlimit) return "Empate (R lim exceeded)";
-
+  if(state.Rlimit > 0 && state.R > state.Rlimit) return "Empate (R limite)";
   return null;
 }
 
-// keyboard controls
+// keyboard
 window.addEventListener('keydown', (ev)=>{
   if(menu.classList.contains('hidden') && gameScreen.classList.contains('hidden')) return;
   if(gameScreen.classList.contains('hidden')) return;
@@ -248,22 +230,4 @@ window.addEventListener('keydown', (ev)=>{
   else if(key === 'arrowright' || key === 'd'){ moveHero(0,1); }
 });
 
-// initial draw binding for turn display
-qs('#turn').textContent = state.R;
-
-// DOWNLOAD ZIP button: cria arquivo zip com os 3 arquivos (usa JSZip CDN)
-qs('#btnDownload').onclick = async () => {
-  // cria zip simples com conteúdo dos 3 arquivos (mesmo conteúdo que vc salvou)
-  const zipName = 'meu-jogo.zip';
-  // conteúdo textual (você pode optar por salvar manualmente em vez disso)
-  const index = `<!doctype html>\\n... (salve os arquivos manualmente conforme instrução)`;
-  // Para simplificar não estamos gerando o ZIP completo aqui no exemplo,
-  // pois é mais confiável salvar os 3 arquivos localmente. Veja instruções abaixo.
-  alert('Instrução: salve index.html, style.css e game.js numa pasta e compacte com zip. Veja instruções no README.');
-};
-
-// Draw basic placeholder to show initial board size when page loads
-function showInitialPreview(){
-  draw();
-}
-showInitialPreview();
+draw();
