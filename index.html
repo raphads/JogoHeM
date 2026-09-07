@@ -3,69 +3,84 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>H vs M — Jogo</title>
+  <title>H vs M — V2.0</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <div id="menu" class="panel">
-    <h1>H vs M</h1>
+    <h1>H vs M — Versão 2.0</h1>
 
     <div class="section">
-      <h3>Configurações Iniciais</h3>
-      <label>H (Herói) — A (linha) <input id="h_a" type="number" min="1" max="10" value="10"/> B (coluna) <input id="h_b" type="number" min="1" max="10" value="1"/></label>
-      <label>M1 — A <input id="m1_a" type="number" min="1" max="10" value="1"/> B <input id="m1_b" type="number" min="1" max="10" value="1"/></label>
-      <label>M2 — A <input id="m2_a" type="number" min="1" max="10" value="1"/> B <input id="m2_b" type="number" min="1" max="10" value="10"/></label>
-      <label>T (Tesouro) — A <input id="t_a" type="number" min="1" max="10" value="5"/> B <input id="t_b" type="number" min="1" max="10" value="5"/></label>
+      <h3>Configuração do Mapa</h3>
+      <label>Tamanho do Mapa:
+        <select id="mapSize">
+          <option value="10" selected>10 x 10</option>
+          <option value="20">20 x 20</option>
+          <option value="50">50 x 50</option>
+        </select>
+      </label>
+      <label>Densidade de Paredes (%): 
+        <input id="wallDensity" type="number" min="0" max="30" value="10"/>
+      </label>
+      <label>
+        <input id="togglePacman" type="checkbox" checked/> Ativar Bordas Pac-Man (Túneis)
+      </label>
+    </div>
 
-      <label>V H <input id="v_h" type="number" min="1" value="2"/></label>
-      <label>V M1 <input id="v_m1" type="number" min="1" value="1"/></label>
-      <label>V M2 <input id="v_m2" type="number" min="1" value="1"/></label>
+    <div class="section">
+      <h3>Personagens & Posições</h3>
+      <label>Herói (H) — A <input id="h_a" class="dynamic-max" type="number" min="1" max="10" value="10"/> B <input id="h_b" class="dynamic-max" type="number" min="1" max="10" value="1"/> V <input id="v_h" type="number" min="1" value="2"/></label>
+      <label>Tesouro (T) — A <input id="t_a" class="dynamic-max" type="number" min="1" max="10" value="5"/> B <input id="t_b" class="dynamic-max" type="number" min="1" max="10" value="5"/></label>
 
-      <label>Limite de rodadas R (0 = sem limite) <input id="r_limit" type="number" min="0" value="0"/></label>
+      <h4>Monstros</h4>
+      <label>Quantidade (1 a 5): 
+        <input id="monsterCount" type="number" min="1" max="5" value="2"/>
+      </label>
+      <div id="monsterConfigs" class="subsection"></div>
+    </div>
 
+    <div class="section">
+      <h3>Power-Ups & Regras</h3>
       <div class="row">
-        <label><input id="toggleP" type="checkbox"/> Usar Power-Up P</label>
-        <label><input id="toggleD" type="checkbox"/> Usar Power-Up D</label>
+        <label><input id="toggleP" type="checkbox"/> Power-Up P (Velocidade)</label>
+        <label><input id="toggleD" type="checkbox"/> Power-Up D (Diagonal)</label>
+        <label><input id="toggleI" type="checkbox"/> Power-Up I (Invencibilidade)</label>
       </div>
 
-      <div id="powerSettings" class="subsection">
-        <h4>P (se ativo)</h4>
-        <label>P — A <input id="p_a" type="number" min="1" max="10" value="10"/> B <input id="p_b" type="number" min="1" max="10" value="5"/></label>
-        <label>Valor (V extra) <input id="p_value" type="number" min="1" value="5"/></label>
-
-        <h4>D (se ativo)</h4>
-        <label>D — A <input id="d_a" type="number" min="1" max="10" value="1"/> B <input id="d_b" type="number" min="1" max="10" value="10"/></label>
-        <label>D duração (turnos) <input id="d_duration" type="number" min="1" value="3"/></label>
+      <div class="subsection">
+        <p><strong>P:</strong> A <input id="p_a" class="dynamic-max" type="number" min="1" max="10" value="10"/> B <input id="p_b" class="dynamic-max" type="number" min="1" max="10" value="5"/> | V Extra <input id="p_value" type="number" min="1" value="3"/></p>
+        <p><strong>D:</strong> A <input id="d_a" class="dynamic-max" type="number" min="1" max="10" value="1"/> B <input id="d_b" class="dynamic-max" type="number" min="1" max="10" value="10"/> | Dur. <input id="d_duration" type="number" min="1" value="3"/></p>
+        <p><strong>I:</strong> A <input id="i_a" class="dynamic-max" type="number" min="1" max="10" value="5"/> B <input id="i_b" class="dynamic-max" type="number" min="1" max="10" value="1"/> | Dur. <input id="i_duration" type="number" min="1" value="4"/></p>
       </div>
+
+      <label>Limite de Turnos R (0 = ilimitado): <input id="r_limit" type="number" min="0" value="0"/></label>
     </div>
 
     <div class="controls">
-      <button id="btnStart">Jogar</button>
+      <button id="btnStart">Iniciar Jogo</button>
       <button id="btnRules">Regras</button>
-      <button id="btnDownload">Download ZIP</button>
     </div>
-
-    <small class="hint">Use as setas ou WASD para mover o Herói.</small>
   </div>
 
   <div id="rules" class="panel hidden">
-    <h2>Regras (resumo)</h2>
+    <h2>Regras (V2.0)</h2>
     <ol>
-      <li>H vence ao chegar no T — marcado como <strong>V</strong>.</li>
-      <li>M vence se ficar adjacente (ortogonal) ou na mesma casa que H.</li>
-      <li>Se H pega T no mesmo turno em que M fica adjacente → M vence.</li>
-      <li>Movimento ortogonal somente (sem diagonal), salvo se D ativo.</li>
-      <li>Empate de opções de M (mesma redução de Manhattan) → escolha aleatória.</li>
-      <li>R = 0 → sem limite de rodadas.</li>
-      <li>P aumenta V do personagem que pegar; D permite diagonal por X turnos.</li>
+      <li><strong>Objetivo:</strong> O Herói deve alcançar o Tesouro (amarelo) e os Monstros devem pegar o Herói.</li>
+      <li><strong>Paredes (cinza):</strong> Bloqueiam a passagem de Herói e Monstros.</li>
+      <li><strong>Pac-Man Wrap:</strong> Atravessar a borda faz você surgir no lado oposto do mapa.</li>
+      <li><strong>Power-Up I (Roxo/Rosa):</strong> Garante imunidade contra os monstros por um número determinado de turnos.</li>
+      <li><strong>Power-Up D (Ciano):</strong> Permite movimentação diagonal (Teclas Q/E/Z/C ou 7/9/1/3).</li>
+      <li><strong>Power-Up P (Verde):</strong> Aumenta permanentemente a velocidade de movimento.</li>
     </ol>
-    <button id="btnBack">Voltar</button>
+    <button id="btnBack">Voltar ao Menu</button>
   </div>
 
   <div id="gameScreen" class="hidden">
     <div class="hud">
-      <div id="info">Turno: <span id="turn">0</span></div>
-      <button id="btnQuit">Sair para menu</button>
+      <div>Turno: <span id="turn">0</span></div>
+      <div>Invencível: <span id="invState">Inativo</span></div>
+      <div>Diagonal: <span id="diagState">Inativo</span></div>
+      <button id="btnQuit">Menu</button>
     </div>
     <canvas id="board" width="600" height="600"></canvas>
   </div>
